@@ -1,11 +1,12 @@
 use syn::{parse::Parse, punctuated::Punctuated, Error, Token};
 
-use self::{cargo::Cargo, ensure::Ensure, package::Packages, script::Script};
+use self::{cargo::Cargo, ensure::Ensure, package::Packages, script::Script, symlinks::Symlinks};
 
 pub mod cargo;
 pub mod ensure;
 pub mod package;
 pub mod script;
+pub mod symlinks;
 
 mod kw {
     use syn::custom_keyword;
@@ -37,6 +38,7 @@ pub enum Section {
     Ensure(Ensure),
     Packages(Packages),
     Script(Script),
+    Symlinks(Symlinks),
 }
 
 #[cfg(test)]
@@ -47,6 +49,7 @@ impl Section {
             _ => None,
         }
     }
+    
     fn as_ensure(&self) -> Option<&Ensure> {
         match self {
             Self::Ensure(c) => Some(c),
@@ -67,6 +70,13 @@ impl Section {
             _ => None,
         }
     }
+
+    fn as_symlinks(&self) -> Option<&Symlinks> {
+        match self {
+            Self::Symlinks(c) => Some(c),
+            _ => None,
+        }
+    }
 }
 
 impl Parse for Section {
@@ -79,6 +89,8 @@ impl Parse for Section {
             Ok(Self::Script(input.parse()?))
         } else if input.peek(kw::packages) {
             Ok(Self::Packages(input.parse()?))
+        } else if input.peek(kw::symlinks) {
+            Ok(Self::Symlinks(input.parse()?))
         } else {
             Err(Error::new(input.span(), "Unknown section"))
         }
@@ -87,6 +99,8 @@ impl Parse for Section {
 
 #[cfg(test)]
 mod tests {
+    use std::ffi::OsString;
+
     use syn::parse_str;
 
     use crate::installer::parse::package::Package;
@@ -115,7 +129,11 @@ mod tests {
             "build-essential" => {
               pacman = "base-devel",
             }
-        }
+        };
+
+        symlinks {
+            "foo" => "bar",
+        };
             "#,
         )
         .unwrap();

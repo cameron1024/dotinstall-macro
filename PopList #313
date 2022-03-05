@@ -1,0 +1,2 @@
+        let Symlinks { links, .. } = links.as_symlinks().unwrap();
+    pub links: Vec<Symlink>, - src/installer/parse/symlinks.rs

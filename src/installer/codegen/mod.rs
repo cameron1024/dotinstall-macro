@@ -2,11 +2,13 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::LitStr;
 
+
 use super::parse::{
     cargo::Cargo,
     ensure::Ensure,
     package::{Package, Packages},
     script::Script,
+    symlinks::{Symlinks, Symlink},
     Installer, Section,
 };
 
@@ -109,6 +111,22 @@ fn generate_section(section: &Section) -> TokenStream {
                     #build_vec
                     vec.push(::std::boxed::Box::new(packages));
                 }
+            }
+        }
+        Section::Symlinks(Symlinks { links, .. }) => {
+            
+            let links = links.iter().map(|Symlink { link, original, .. }| quote! {
+                links.insert(#link.into(), #original.into());
+            });
+
+            quote! {
+                {
+                    let mut links = ::std::collections::HashMap::<::std::ffi::OsString, ::std::ffi::OsString>::new();
+                    #(#links)*
+                    let temp = ::dotinstall::Symlinks { links };
+                    vec.push(::std::boxed::Box::new(temp));
+                }
+
             }
         }
     }
